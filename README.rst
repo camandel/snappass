@@ -2,6 +2,30 @@
 SnapPass
 ========
 
+This is a modified version of `snappass`_:
+
+.. image:: assets/screenshot-1.jpg?raw=true
+ 
+.. image:: assets/screenshot-2.jpg?raw=true
+
+New features
+------------
+
+-  choose the number of links to generate for the same secret
+-  set the max number of links with ``MAX_DUPLICATE`` variable
+-  added ``copy email message`` button to copy a message to use into emails
+-  added ``delete`` buttom to invalidate and remove a link
+-  changed theme colors
+-  moved from Bootstrap 3 to Bootstrap 5
+-  moved from FontAwsome to Bootstrap 5 Icons
+-  moved from JQuery to vanilla javascript
+- changed static directory structure
+
+.. _snappass: https://github.com/pinterest/snappass
+
+Original README
+---------------
+
 |pypi| |build|
 
 .. |pypi| image:: https://img.shields.io/pypi/v/snappass.svg

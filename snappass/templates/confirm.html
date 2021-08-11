@@ -3,26 +3,38 @@
 {% block content %}
 <div class="container">
   <section>
-    <div class="page-header"><h1>Share Secret Link</h1></div>
+    <div class="page-header"><h3 class="text-primary">Share Secret Link</h3></div>
     <p>The secret has been temporarily saved. Send the following URL to your intended recipient.</p>
-    <div class="row">
+    {% for pwd in password_link %}
+      {% set expires_at = expire_dates[loop.index - 1] %}
+    <div class="row" id="row-{{ loop.index }}">
       <div class="col-sm-6 margin-bottom-10">
-        <input type="text" class="form-control" id="password-link" value="{{ password_link }}" readonly="readonly">
+        <input type="text" class="form-control" id="password-link-{{ loop.index }}" value="{{ pwd }}" readonly="readonly">
       </div>
 
       <div class="col-sm-6">
-        <button title="Copy to clipboard" type="button" class="btn btn-primary copy-clipboard-btn"
-              id="copy-clipboard-btn" data-clipboard-target="#password-link"
-              data-placement='bottom'>
-          <i class="fa fa-clipboard"></i>
+        <button title="Copy link to clipboard" type="button" class="btn btn-primary copy-clipboard-btn copy-btn"
+              id="url-clipboard-{{ loop.index }}" data-clipboard-target="#password-link-{{ loop.index }}"
+              data-bs-toggle="tooltip" data-bs-placement="bottom">
+          <i class="bi bi-clipboard"></i>
+        </button>
+        <button onClick="createMailText(this.id)" title="Copy email message to clipboard" type="button" class="btn btn-primary copy-clipboard-btn copy-btn"
+              id="mail-clipboard-{{ loop.index }}" data-clipboard-text="" data-expires="{{ expires_at }}"
+              data-bs-toggle="tooltip" data-bs-placement="bottom">
+          <i class="bi bi-envelope"></i>
+        </button>
+        <button onClick="deleteSecret(this.id)" title="Delete secret" type="button" class="btn btn-primary copy-clipboard-btn delete-btn" id="delete-btn-{{ loop.index }}" 
+              data-bs-toggle="tooltip" data-bs-placement="bottom">
+          <i class="bi bi-trash"></i>
         </button>
       </div>
     </div>
+    {% endfor %}
   </section>
 </div>
 {% endblock %}
 
 {% block js %}
-<script src="{{ config.STATIC_URL }}/clipboardjs/clipboard.min.js"></script>
-<script src="{{ config.STATIC_URL }}/snappass/scripts/clipboard_button.js"></script>
+<script src="{{ config.STATIC_URL }}/js/clipboard.min.js"></script>
+<script src="{{ config.STATIC_URL }}/js/snappass_buttons.js"></script>
 {% endblock %}

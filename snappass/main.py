@@ -10,18 +10,20 @@ from redis.exceptions import ConnectionError
 from werkzeug.urls import url_quote_plus
 from werkzeug.urls import url_unquote_plus
 from distutils.util import strtobool
+from datetime import datetime, timedelta
 
 NO_SSL = bool(strtobool(os.environ.get('NO_SSL', 'False')))
 URL_PREFIX = os.environ.get('URL_PREFIX', None)
 HOST_OVERRIDE = os.environ.get('HOST_OVERRIDE', None)
 TOKEN_SEPARATOR = '~'
+MAX_DUPLICATE = os.environ.get('MAX_DUPLICATE', 10)
 
 
 # Initialize Flask Application
 app = Flask(__name__)
 if os.environ.get('DEBUG'):
     app.debug = True
-app.secret_key = os.environ.get('SECRET_KEY', 'Secret Key')
+app.secret_key = os.environ.get('SECRET_KEY', '?=m5jojvKpd`PQd1m]_(ls5KR(Kc6Mi&oQ')
 app.config.update(
     dict(STATIC_URL=os.environ.get('STATIC_URL', 'static')))
 
@@ -102,7 +104,10 @@ def set_password(password, ttl):
     redis_client.setex(storage_key, ttl, encrypted_password)
     encryption_key = encryption_key.decode('utf-8')
     token = TOKEN_SEPARATOR.join([storage_key, encryption_key])
-    return token
+
+    expires_at = datetime.now() + timedelta(minutes = ttl)
+
+    return token, expires_at
 
 
 @check_redis_alive
@@ -151,18 +156,35 @@ def clean_input():
     if time_period not in TIME_CONVERSION:
         abort(400)
 
-    return TIME_CONVERSION[time_period], request.form['password']
+    if empty(request.form.get('duplicate', '')):
+        abort(400)
+
+    try:
+        duplicate = int(request.form['duplicate'])
+    except ValueError:
+        duplicate = 1
+    duplicate = 1 if duplicate < 1 else MAX_DUPLICATE if duplicate > MAX_DUPLICATE else duplicate
+
+    return TIME_CONVERSION[time_period], request.form['password'], duplicate
 
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('set_password.html')
+    return render_template('set_password.html', max_duplicate=MAX_DUPLICATE)
 
 
 @app.route('/', methods=['POST'])
 def handle_password():
-    ttl, password = clean_input()
-    token = set_password(password, ttl)
+
+    tokens = []
+    links = []
+    expire_dates = []
+
+    ttl, password, duplicate = clean_input()
+    for i in range(duplicate):
+        token, expires_at = set_password(password, ttl)
+        tokens.append(token)
+        expire_dates.append(expires_at)
 
     if NO_SSL:
         if HOST_OVERRIDE:
@@ -176,8 +198,11 @@ def handle_password():
             base_url = request.url_root.replace("http://", "https://")
     if URL_PREFIX:
         base_url = base_url + URL_PREFIX.strip("/") + "/"
-    link = base_url + url_quote_plus(token)
-    return render_template('confirm.html', password_link=link)
+
+    for i in range(duplicate):
+        links.append(base_url + url_quote_plus(tokens[i]))
+
+    return render_template('confirm.html', password_link=links, expire_dates=expire_dates)
 
 
 @app.route('/<password_key>', methods=['GET'])
@@ -198,6 +223,12 @@ def show_password(password_key):
 
     return render_template('password.html', password=password)
 
+@app.route('/<password_key>', methods=['DELETE'])
+def delete_password(password_key):
+    password_key = url_unquote_plus(password_key)
+    get_password(password_key)
+
+    return ('', 204)
 
 @check_redis_alive
 def main():
