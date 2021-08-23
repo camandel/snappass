@@ -19,7 +19,8 @@ New features
 -  moved from Bootstrap 3 to Bootstrap 5
 -  moved from FontAwsome to Bootstrap 5 Icons
 -  moved from JQuery to vanilla javascript
-- changed static directory structure
+-  changed static directory structure
+-  multi-arch docker image (camandel/snappass)
 
 .. _snappass: https://github.com/pinterest/snappass
 

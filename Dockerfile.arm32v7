@@ -1,0 +1,28 @@
+# builder ################################################################################################
+FROM python:3.8-slim-buster as builder
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libffi-dev \
+    libssl-dev \
+    rustc \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+RUN python -m pip wheel --wheel-dir=/usr/src/wheel cryptography==3
+
+# final image ############################################################################################
+FROM python:3.8-slim-buster
+ARG APP_DIR=/usr/src/snappass
+COPY --from=builder /usr/src/wheel /usr/src/wheel
+RUN groupadd -r snappass && \
+    useradd -r -g snappass snappass && \
+    mkdir -p ${APP_DIR}
+WORKDIR ${APP_DIR}
+COPY ["setup.py", "MANIFEST.in", "README.rst", "AUTHORS.rst", "${APP_DIR}/"]
+COPY ["./snappass", "${APP_DIR}/snappass"]
+RUN python -m pip install /usr/src/wheel/*.whl && \
+    python setup.py install && \
+    chown -R snappass ${APP_DIR} && \
+    chgrp -R snappass ${APP_DIR}
+USER snappass
+EXPOSE 5000
+CMD ["snappass"]
